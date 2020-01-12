@@ -1,9 +1,10 @@
 package advent_of_code
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestConstructPath(t *testing.T) {
@@ -23,7 +24,7 @@ func TestConstructPath(t *testing.T) {
 				},
 			},
 			grid: map[point]pathEntry{
-				point{0, 0}:  {wire: firstWire},
+
 				point{1, 0}:  {wire: firstWire},
 				point{2, 0}:  {wire: firstWire},
 				point{3, 0}:  {wire: firstWire},
@@ -58,7 +59,7 @@ func TestConstructPath(t *testing.T) {
 				},
 			},
 			grid: map[point]pathEntry{
-				point{0, 0}:  {wire: secondWire},
+
 				point{0, -1}: {wire: secondWire},
 				point{0, -2}: {wire: secondWire},
 				point{0, -3}: {wire: secondWire},
@@ -112,7 +113,7 @@ func TestConstructAllPath(t *testing.T) {
 				},
 			},
 			grid: map[point]pathEntry{
-				point{0, 0}:  {wire: firstWire},
+
 				point{1, 0}:  {wire: firstWire},
 				point{2, 0}:  {wire: firstWire},
 				point{3, 0}:  {wire: firstWire},
@@ -172,7 +173,7 @@ func TestConstructAllPath(t *testing.T) {
 				point{3, -5}: {wire: firstWire},
 				point{3, -4}: {wire: firstWire},
 				point{3, -2}: {wire: firstWire},
-				point{0, 0}:  {wire: both},
+
 				point{0, -1}: {wire: secondWire},
 				point{0, -2}: {wire: secondWire},
 				point{0, -3}: {wire: secondWire},
@@ -277,7 +278,6 @@ func TestGetClosestDistance(t *testing.T) {
 		})
 	}
 }
-
 
 func TestGetShortestDistance(t *testing.T) {
 	tests := []struct {
