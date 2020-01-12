@@ -13,7 +13,7 @@ func getDigits(password int) []int {
 		q = q / 10
 		digits = append(digits, r)
 	}
-	return reverse(digits)
+	return digits
 }
 
 func reverse(ints []int) []int {
@@ -25,7 +25,7 @@ func reverse(ints []int) []int {
 }
 
 func isValid(password int) bool {
-	digits := getDigits(password)
+	digits := reverse(getDigits(password))
 	if len(digits) != 6 {
 		return false
 	}
@@ -45,7 +45,7 @@ func isValid(password int) bool {
 }
 
 func isValidPart2(password int) bool {
-	digits := getDigits(password)
+	digits := reverse(getDigits(password))
 	if len(digits) != 6 {
 		return false
 	}
