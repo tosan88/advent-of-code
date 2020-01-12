@@ -91,3 +91,26 @@ func readInputAsCSWP(fileName string) (map[wire][]wireDirection, error) {
 
 	return path, nil
 }
+
+//readInputAsOM reads the input file with the given fileName as an orbit map
+func readInputAsOM(fileName string) (map[string]string, error) {
+	f, err := os.Open(fileName)
+	if err != nil {
+		return nil, fmt.Errorf("reading input file: %v\n", err)
+	}
+	defer func() {
+		_ = f.Close()
+	}()
+
+	orbits := make(map[string]string)
+
+	scanner := bufio.NewScanner(f)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		orbit := strings.Split(line, ")")
+		orbits[orbit[1]] = orbit[0]
+	}
+
+	return orbits, nil
+}
