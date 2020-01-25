@@ -15,151 +15,183 @@ func (p *program) nextInstruction(inputCh chan int) bool {
 		//halt program
 		return false
 	case 1:
-		//add the next 2 values and overwrite the value on the position given as the next value
-		//ignore safety checks
-		if modes[2] == 1 {
-			log.Printf("Invalid mode for instruction write : %v, cursor: %v\n", p.code[p.cursor], p.cursor)
-		}
-		var firstPart, secondPart int
-		if modes[0] == 0 {
-			firstPart = p.code[p.code[p.cursor+1]]
-		} else {
-			firstPart = p.code[p.cursor+1]
-		}
-
-		if modes[1] == 0 {
-			secondPart = p.code[p.code[p.cursor+2]]
-		} else {
-			secondPart = p.code[p.cursor+2]
-		}
-		sum := firstPart + secondPart
-		p.code[p.code[p.cursor+3]] = sum
-		p.cursor += 4
+		p.addInstruction(modes)
 	case 2:
-		//multiple the next 2 values and overwrite the value on the position given as the next value
-		//ignore safety checks
-		if modes[2] == 1 {
-			log.Printf("Invalid mode for instruction write : %v, cursor: %v\n", p.code[p.cursor], p.cursor)
-		}
-		var firstPart, secondPart int
-		if modes[0] == 0 {
-			firstPart = p.code[p.code[p.cursor+1]]
-		} else {
-			firstPart = p.code[p.cursor+1]
-		}
-
-		if modes[1] == 0 {
-			secondPart = p.code[p.code[p.cursor+2]]
-		} else {
-			secondPart = p.code[p.cursor+2]
-		}
-		product := firstPart * secondPart
-		p.code[p.code[p.cursor+3]] = product
-		p.cursor += 4
+		p.multiplyInstruction(modes)
 	case 3:
-		//read an input and store it at the position given as the next value
-		in := readInputForSave(inputCh)
-		p.code[p.code[p.cursor+1]] = in
-		p.cursor += 2
+		p.readInputInstruction(inputCh)
 	case 4:
-		//prints a given value given as the first param
-		var output int
-		if modes[0] == 0 {
-			output = p.code[p.code[p.cursor+1]]
-		} else {
-			output = p.code[p.cursor+1]
-		}
-		printOutput(output, p.cursor)
-		p.cursor += 2
+		p.printInstruction(modes)
 	case 5:
-		// jump-if-true
-		var param int
-		if modes[0] == 0 {
-			param = p.code[p.code[p.cursor+1]]
-		} else {
-			param = p.code[p.cursor+1]
-		}
-		if param != 0 {
-			if modes[1] == 0 {
-				p.cursor = p.code[p.code[p.cursor+2]]
-			} else {
-				p.cursor = p.code[p.cursor+2]
-			}
-		} else {
-			//just increment cursor
-			p.cursor += 3
-		}
+		p.jumpIfTrueInstruction(modes)
 	case 6:
-		//jump-if-false
-		var param int
-		if modes[0] == 0 {
-			param = p.code[p.code[p.cursor+1]]
-		} else {
-			param = p.code[p.cursor+1]
-		}
-		if param == 0 {
-			if modes[1] == 0 {
-				p.cursor = p.code[p.code[p.cursor+2]]
-			} else {
-				p.cursor = p.code[p.cursor+2]
-			}
-		} else {
-			//just increment cursor
-			p.cursor += 3
-		}
+		p.jumpIfFalseInstruction(modes)
 	case 7:
-		//less-than
-		if modes[2] == 1 {
-			log.Printf("Invalid mode for instruction write : %v, cursor: %v\n", p.code[p.cursor], p.cursor)
-		}
-		var firstPart, secondPart int
-		if modes[0] == 0 {
-			firstPart = p.code[p.code[p.cursor+1]]
-		} else {
-			firstPart = p.code[p.cursor+1]
-		}
-
-		if modes[1] == 0 {
-			secondPart = p.code[p.code[p.cursor+2]]
-		} else {
-			secondPart = p.code[p.cursor+2]
-		}
-
-		if firstPart < secondPart {
-			p.code[p.code[p.cursor+3]] = 1
-		} else {
-			p.code[p.code[p.cursor+3]] = 0
-		}
-		p.cursor += 4
+		p.lessThanInstruction(modes)
 	case 8:
-		//equals
-		if modes[2] == 1 {
-			log.Printf("Invalid mode for instruction write : %v, cursor: %v\n", p.code[p.cursor], p.cursor)
-		}
-		var firstPart, secondPart int
-		if modes[0] == 0 {
-			firstPart = p.code[p.code[p.cursor+1]]
-		} else {
-			firstPart = p.code[p.cursor+1]
-		}
-
-		if modes[1] == 0 {
-			secondPart = p.code[p.code[p.cursor+2]]
-		} else {
-			secondPart = p.code[p.cursor+2]
-		}
-
-		if firstPart == secondPart {
-			p.code[p.code[p.cursor+3]] = 1
-		} else {
-			p.code[p.code[p.cursor+3]] = 0
-		}
-		p.cursor += 4
+		p.equalsInstruction(modes)
 	default:
 		log.Printf("Invalid opCode: %v, cursor: %v\n", opCode, p.cursor)
 		return false
 	}
 	return true
+}
+
+func (p *program) equalsInstruction(modes []int) {
+	//equals
+	if modes[2] == 1 {
+		log.Printf("Invalid mode for instruction write : %v, cursor: %v\n", p.code[p.cursor], p.cursor)
+	}
+	var firstPart, secondPart int
+	if modes[0] == 0 {
+		firstPart = p.code[p.code[p.cursor+1]]
+	} else {
+		firstPart = p.code[p.cursor+1]
+	}
+
+	if modes[1] == 0 {
+		secondPart = p.code[p.code[p.cursor+2]]
+	} else {
+		secondPart = p.code[p.cursor+2]
+	}
+
+	if firstPart == secondPart {
+		p.code[p.code[p.cursor+3]] = 1
+	} else {
+		p.code[p.code[p.cursor+3]] = 0
+	}
+	p.cursor += 4
+}
+
+func (p *program) lessThanInstruction(modes []int) {
+	//less-than
+	if modes[2] == 1 {
+		log.Printf("Invalid mode for instruction write : %v, cursor: %v\n", p.code[p.cursor], p.cursor)
+	}
+	var firstPart, secondPart int
+	if modes[0] == 0 {
+		firstPart = p.code[p.code[p.cursor+1]]
+	} else {
+		firstPart = p.code[p.cursor+1]
+	}
+
+	if modes[1] == 0 {
+		secondPart = p.code[p.code[p.cursor+2]]
+	} else {
+		secondPart = p.code[p.cursor+2]
+	}
+
+	if firstPart < secondPart {
+		p.code[p.code[p.cursor+3]] = 1
+	} else {
+		p.code[p.code[p.cursor+3]] = 0
+	}
+	p.cursor += 4
+}
+
+func (p *program) jumpIfFalseInstruction(modes []int) {
+	//jump-if-false
+	var param int
+	if modes[0] == 0 {
+		param = p.code[p.code[p.cursor+1]]
+	} else {
+		param = p.code[p.cursor+1]
+	}
+	if param == 0 {
+		if modes[1] == 0 {
+			p.cursor = p.code[p.code[p.cursor+2]]
+		} else {
+			p.cursor = p.code[p.cursor+2]
+		}
+	} else {
+		//just increment cursor
+		p.cursor += 3
+	}
+}
+
+func (p *program) jumpIfTrueInstruction(modes []int) {
+	// jump-if-true
+	var param int
+	if modes[0] == 0 {
+		param = p.code[p.code[p.cursor+1]]
+	} else {
+		param = p.code[p.cursor+1]
+	}
+	if param != 0 {
+		if modes[1] == 0 {
+			p.cursor = p.code[p.code[p.cursor+2]]
+		} else {
+			p.cursor = p.code[p.cursor+2]
+		}
+	} else {
+		//just increment cursor
+		p.cursor += 3
+	}
+}
+
+func (p *program) printInstruction(modes []int) {
+	//prints a given value given as the first param
+	var output int
+	if modes[0] == 0 {
+		output = p.code[p.code[p.cursor+1]]
+	} else {
+		output = p.code[p.cursor+1]
+	}
+	printOutput(output, p.cursor)
+	p.cursor += 2
+}
+
+func (p *program) readInputInstruction(inputCh chan int) {
+	//read an input and store it at the position given as the next value
+	in := readInputForSave(inputCh)
+	p.code[p.code[p.cursor+1]] = in
+	p.cursor += 2
+}
+
+func (p *program) multiplyInstruction(modes []int) {
+	//multiple the next 2 values and overwrite the value on the position given as the next value
+	//ignore safety checks
+	if modes[2] == 1 {
+		log.Printf("Invalid mode for instruction write : %v, cursor: %v\n", p.code[p.cursor], p.cursor)
+	}
+	var firstPart, secondPart int
+	if modes[0] == 0 {
+		firstPart = p.code[p.code[p.cursor+1]]
+	} else {
+		firstPart = p.code[p.cursor+1]
+	}
+
+	if modes[1] == 0 {
+		secondPart = p.code[p.code[p.cursor+2]]
+	} else {
+		secondPart = p.code[p.cursor+2]
+	}
+	product := firstPart * secondPart
+	p.code[p.code[p.cursor+3]] = product
+	p.cursor += 4
+}
+
+func (p *program) addInstruction(modes []int) {
+	//add the next 2 values and overwrite the value on the position given as the next value
+	//ignore safety checks
+	if modes[2] == 1 {
+		log.Printf("Invalid mode for instruction write : %v, cursor: %v\n", p.code[p.cursor], p.cursor)
+	}
+	var firstPart, secondPart int
+	if modes[0] == 0 {
+		firstPart = p.code[p.code[p.cursor+1]]
+	} else {
+		firstPart = p.code[p.cursor+1]
+	}
+
+	if modes[1] == 0 {
+		secondPart = p.code[p.code[p.cursor+2]]
+	} else {
+		secondPart = p.code[p.cursor+2]
+	}
+	sum := firstPart + secondPart
+	p.code[p.code[p.cursor+3]] = sum
+	p.cursor += 4
 }
 
 func getOpCodeWithParamModes(input int) (int, []int) {
