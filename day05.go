@@ -207,7 +207,7 @@ func printOutput(output, cursor int) {
 	log.Printf("output: %v, cursor: %v\n", output, cursor)
 }
 
-func readInputForSave(inputCh chan int) int {
+func readInputForSave(inputCh <-chan int) int {
 	log.Println("Expecting input...")
 	return <-inputCh
 }
