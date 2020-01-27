@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+//flaky tests
 func TestAmplify(t *testing.T) {
 	tests := []struct {
 		name string
@@ -88,16 +89,49 @@ func TestAoCDay07Part1(t *testing.T) {
 
 }
 
-//func TestAoCDay07Part2(t *testing.T) {
-//	ints, err := readInputAsCsi("aoc_input07.txt")
-//	if err != nil {
-//		t.Fatalf("ERROR: %v\n", err)
-//	}
-//
-//	amp := amplifier{ints}
-//
-//	maxThrusterSignal := amp.findMaxThrusterSignalPart2()
-//
-//	assert.Equal(t, 18812, maxThrusterSignal)
-//
-//}
+
+func TestAmplifyWithLoop(t *testing.T) {
+	tests := []struct {
+		name string
+		amp amplifier
+		phases []int
+		output int
+	}{
+		{
+			name: "Output: 139629729",
+			amp: amplifier{[]int{3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,
+				27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5}},
+			phases: []int{9,8,7,6,5},
+			output: 139629729,
+		},
+		{
+			name: "Output: 18216",
+			amp: amplifier{[]int{3,52,1001,52,-5,52,3,53,1,52,56,54,1007,54,5,55,1005,55,26,1001,54,
+				-5,54,1105,1,12,1,53,54,53,1008,54,0,55,1001,55,1,55,2,53,55,53,4,
+				53,1001,56,-1,56,1005,56,6,99,0,0,0,0,10}},
+			phases: []int{9,7,8,5,6},
+			output: 18216,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			actualOutput := test.amp.amplifyWithLoop(test.phases)
+			assert.Equal(t, test.output, actualOutput)
+		})
+	}
+}
+
+
+func TestAoCDay07Part2(t *testing.T) {
+	ints, err := readInputAsCsi("aoc_input07.txt")
+	if err != nil {
+		t.Fatalf("ERROR: %v\n", err)
+	}
+
+	amp := amplifier{ints}
+
+	maxThrusterSignal := amp.findMaxThrusterSignalPart2()
+
+	assert.Equal(t, 25534964, maxThrusterSignal)
+
+}

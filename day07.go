@@ -6,10 +6,13 @@ import (
 	"sync"
 )
 
+var debug = true
+
 type programD07 struct {
 	*program
-	in  <-chan int
-	out chan<- int
+	in    <-chan int
+	out   chan<- int
+	close chan int
 }
 
 func (p *programD07) nextInstruction() bool {
@@ -19,7 +22,9 @@ func (p *programD07) nextInstruction() bool {
 	opCode, modes := getOpCodeWithParamModes(p.code[p.cursor])
 	switch opCode {
 	case 99:
-		//close(p.out)
+		if p.close != nil {
+			close(p.close)
+		}
 		return false
 	case 1:
 		p.addInstruction(modes)
@@ -46,7 +51,7 @@ func (p *programD07) nextInstruction() bool {
 
 func (p *programD07) readInputInstruction() {
 	//read an input and store it at the position given as the next value
-	in := readInputForSave(p.in)
+	in := p.readInput()
 	p.code[p.code[p.cursor+1]] = in
 	p.cursor += 2
 }
@@ -59,9 +64,22 @@ func (p *programD07) outputInstruction(modes []int) {
 	} else {
 		output = p.code[p.cursor+1]
 	}
-	printOutput(output, p.cursor)
+	if debug {
+		p.printOutput(output)
+	}
 	p.out <- output
 	p.cursor += 2
+}
+
+func (p *programD07) readInput() int {
+	if debug {
+		log.Printf("%v expecting input...\n", p.name)
+	}
+	input := <-p.in
+	if debug {
+		log.Printf("%v got input: %v\n", p.name, input)
+	}
+	return input
 }
 
 type amplifier struct {
@@ -90,10 +108,6 @@ func (a *amplifier) amplify(phases []int, initialPhase int) int {
 		go func(i int) {
 			defer wg.Done()
 			output = <-outCh
-			//if !ok {
-			//	fmt.Println("Program halted")
-			//	return
-			//}
 			if len(phases) == i+1 {
 				fmt.Printf("Final output: %v\n", output)
 			} else {
@@ -173,10 +187,11 @@ func (a *amplifier) findMaxThrusterSignalPart2() int {
 							continue
 						}
 						phases := []int{i, j, k, l, m}
-						fmt.Printf("Phases: %v\n", phases)
-
+						if debug {
+							fmt.Printf("Phases: %v\n", phases)
+						}
 						go func() {
-							outputCh <- a.amplify(phases, 0)
+							outputCh <- a.amplifyWithLoop(phases)
 						}()
 
 						out := <-outputCh
@@ -192,4 +207,88 @@ func (a *amplifier) findMaxThrusterSignalPart2() int {
 	}
 
 	return maxOutput
+}
+
+func (a *amplifier) amplifyWithLoop(phases []int) int {
+	output := make([]int, len(phases))
+	var wg sync.WaitGroup
+	var mux sync.Mutex
+	var inChannels []chan int
+	var outChannels []chan int
+	var closeChannels []chan int
+	for range phases {
+		inChannels = append(inChannels, make(chan int, 2)) //make buffered, so it wont' block when the output is received
+		outChannels = append(outChannels, make(chan int))
+		closeChannels = append(closeChannels, make(chan int))
+	}
+
+	for i, phase := range phases {
+		code := make([]int, len(a.code))
+		copy(code, a.code)
+		outCh := outChannels[i]
+		inCh := inChannels[i]
+		closeCh := closeChannels[i]
+		pr := programD07{in: inCh, out: outCh, program: &program{cursor: 0, code: code, name: fmt.Sprintf("P%v", i)}, close: closeCh}
+		wg.Add(1)
+		go func(p *programD07, i int) {
+			//defer wg.Done()
+			if debug {
+				fmt.Printf("P%v : %p ; in : %p, out : %p\n", i, p, p.in, p.out)
+			}
+			for p.nextInstruction() {
+
+			}
+		}(&pr, i)
+		go func(i, phase int, inCh chan int) {
+			defer wg.Done()
+
+			inCh <- phase
+			if i == 0 {
+				inCh <- 0
+			}
+		}(i, phase, inCh)
+	}
+	wg.Wait()
+	for i, phase := range phases {
+		mux.Lock()
+		code := make([]int, len(a.code))
+		copy(code, a.code)
+		outCh := outChannels[i]
+		inCh := inChannels[i]
+		closeCh := closeChannels[i]
+		var nextInch chan int
+		if len(phases) == i+1 {
+			nextInch = inChannels[0]
+		} else {
+			nextInch = inChannels[i+1]
+		}
+		mux.Unlock()
+		wg.Add(1)
+		go func(i, phase int, inCh, nextInch, outCh, closeCh chan int) {
+			defer wg.Done()
+
+		forLoop:
+			for {
+				select {
+				case out := <-outCh:
+					mux.Lock()
+					output[i] = out
+					fmt.Printf("Intermediate output for %v: %v\n", i, output[i])
+					nextInch <- out
+					mux.Unlock()
+				case <-closeCh:
+					fmt.Printf("Closed %v\n", i)
+					mux.Lock()
+					fmt.Printf("Final output for %v: %v\n", i, output[i])
+					mux.Unlock()
+					break forLoop
+				}
+
+			}
+
+		}(i, phase, inCh, nextInch, outCh, closeCh)
+	}
+
+	wg.Wait()
+	return output[len(output)-1]
 }

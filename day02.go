@@ -7,6 +7,7 @@ import (
 type program struct {
 	code   []int
 	cursor int
+	name string
 }
 
 func NewProgram(code []int) *program {

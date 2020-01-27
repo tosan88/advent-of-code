@@ -137,7 +137,7 @@ func (p *program) printInstruction(modes []int) {
 	} else {
 		output = p.code[p.cursor+1]
 	}
-	printOutput(output, p.cursor)
+	p.printOutput(output)
 	p.cursor += 2
 }
 
@@ -203,8 +203,8 @@ func getOpCodeWithParamModes(input int) (int, []int) {
 	return opCode, digits[:3]
 }
 
-func printOutput(output, cursor int) {
-	log.Printf("output: %v, cursor: %v\n", output, cursor)
+func (p program) printOutput(output int) {
+	log.Printf("%v has output: %v, cursor: %v\n", p.name, output, p.cursor)
 }
 
 func readInputForSave(inputCh <-chan int) int {
