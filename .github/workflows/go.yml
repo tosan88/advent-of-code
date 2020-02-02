@@ -1,5 +1,5 @@
 name: Go
-on: [push]
+on: [push, pull_request]
 jobs:
 
   build:
@@ -26,3 +26,7 @@ jobs:
 
     - name: Build
       run: go build -v .
+  test:
+    name: Run tests
+    needs: build
+    run: go test -race -v ./...
