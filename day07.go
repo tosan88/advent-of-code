@@ -126,10 +126,12 @@ func (a *amplifier) amplify(phases []int, initialPhase int) int {
 			defer wg.Done()
 			output = <-outCh
 
-			if len(phases) == i+1 {
-				fmt.Printf("Final output: %v\n", output)
-			} else {
-				fmt.Printf("Intermediate output: %v\n", output)
+			if debug {
+				if len(phases) == i+1 {
+					fmt.Printf("Final output: %v\n", output)
+				} else {
+					fmt.Printf("Intermediate output: %v\n", output)
+				}
 			}
 			semaphore <- output
 		}(i)
@@ -164,7 +166,9 @@ func (a *amplifier) findMaxThrusterSignal() int {
 							continue
 						}
 						phases := []int{i, j, k, l, m}
-						fmt.Printf("Phases: %v\n", phases)
+						if debug {
+							fmt.Printf("Phases: %v\n", phases)
+						}
 						go func() {
 							outputCh <- a.amplify(phases, 0)
 						}()
@@ -215,7 +219,9 @@ func (a *amplifier) findMaxThrusterSignalPart2() int {
 						if out > maxOutput {
 							maxOutput = out
 						}
-						fmt.Printf("Out: %v\n", out)
+						if debug {
+							fmt.Printf("Out: %v\n", out)
+						}
 
 					}
 				}
@@ -290,13 +296,17 @@ func (a *amplifier) amplifyWithLoop(phases []int) int {
 				case out := <-outCh:
 					mux.Lock()
 					output[i] = out
-					fmt.Printf("Intermediate output for %v: %v\n", i, output[i])
+					if debug {
+						fmt.Printf("Intermediate output for %v: %v\n", i, output[i])
+					}
 					nextInch <- out
 					mux.Unlock()
 				case <-closeCh:
-					fmt.Printf("Closed %v\n", i)
 					mux.Lock()
-					fmt.Printf("Final output for %v: %v\n", i, output[i])
+					if debug {
+						fmt.Printf("Closed %v\n", i)
+						fmt.Printf("Final output for %v: %v\n", i, output[i])
+					}
 					mux.Unlock()
 					break forLoop
 				}
