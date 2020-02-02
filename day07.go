@@ -3,10 +3,25 @@ package advent_of_code
 import (
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 	"sync"
 )
 
-var debug = true
+var debug = func() bool {
+	env := os.Getenv("DEBUG")
+	if env == "" {
+		log.Println("Using default debug flag (false)")
+		return false
+	}
+	debug, err := strconv.ParseBool(env)
+	if err != nil {
+		log.Println("Using default debug flag (false)")
+		return false
+	}
+	log.Println("Using debug=" + env)
+	return debug
+}()
 
 type programD07 struct {
 	*program
@@ -89,6 +104,7 @@ type amplifier struct {
 func (a *amplifier) amplify(phases []int, initialPhase int) int {
 	var output int
 	var wg sync.WaitGroup
+	semaphore := make(chan int, len(phases))
 	for i, phase := range phases {
 		code := make([]int, len(a.code))
 		copy(code, a.code)
@@ -102,19 +118,20 @@ func (a *amplifier) amplify(phases []int, initialPhase int) int {
 			if i == 0 {
 				inCh <- initialPhase
 			} else {
-				inCh <- output
+				out := <-semaphore
+				inCh <- out
 			}
 		}(i)
 		go func(i int) {
 			defer wg.Done()
 			output = <-outCh
+
 			if len(phases) == i+1 {
 				fmt.Printf("Final output: %v\n", output)
 			} else {
 				fmt.Printf("Intermediate output: %v\n", output)
-
 			}
-
+			semaphore <- output
 		}(i)
 		for pr.nextInstruction() {
 
