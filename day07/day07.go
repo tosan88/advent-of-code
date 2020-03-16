@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"time"
 )
 
 var debug = func() bool {
@@ -99,13 +100,16 @@ func (p *Program) ReadInput() int {
 }
 
 type Amplifier struct {
-	Code []int
+	Code    []int
+	Timeout time.Duration
 }
 
-func (a *Amplifier) Amplify(phases []int, initialPhase int) int {
+func (a *Amplifier) Amplify(phases []int, initialPhase int) (int, error) {
 	var output int
 	var wg sync.WaitGroup
 	semaphore := make(chan int, len(phases))
+	errCh := make(chan error, 33)
+	finishedCh := make(chan struct{})
 	for i, phase := range phases {
 		code := make([]int, len(a.Code))
 		copy(code, a.Code)
@@ -115,17 +119,43 @@ func (a *Amplifier) Amplify(phases []int, initialPhase int) int {
 		wg.Add(2)
 		go func(i int) {
 			defer wg.Done()
-			inCh <- phase
+			select {
+			case inCh <- phase:
+			case <-time.After(a.Timeout):
+				errCh <- fmt.Errorf("sending on input channel timed out after %v seconds", a.Timeout)
+				return
+			}
 			if i == 0 {
-				inCh <- initialPhase
+				select {
+				case inCh <- initialPhase:
+				case <-time.After(a.Timeout):
+					errCh <- fmt.Errorf("sending on input channel timed out after %v seconds", a.Timeout)
+					return
+				}
 			} else {
-				out := <-semaphore
-				inCh <- out
+				var out int
+				select {
+				case out = <-semaphore:
+				case <-time.After(a.Timeout):
+					errCh <- fmt.Errorf("receiving on semaphore channel timed out after %v seconds", a.Timeout)
+					return
+				}
+				select {
+				case inCh <- out:
+				case <-time.After(a.Timeout):
+					errCh <- fmt.Errorf("sending on output channel timed out after %v seconds", a.Timeout)
+					return
+				}
 			}
 		}(i)
 		go func(i int) {
 			defer wg.Done()
-			output = <-outCh
+			select {
+			case output = <-outCh:
+			case <-time.After(a.Timeout):
+				errCh <- fmt.Errorf("receiving on output channel timed out after %v seconds", a.Timeout)
+				return
+			}
 
 			if debug {
 				if len(phases) == i+1 {
@@ -134,18 +164,36 @@ func (a *Amplifier) Amplify(phases []int, initialPhase int) int {
 					fmt.Printf("Intermediate output: %v\n", output)
 				}
 			}
-			semaphore <- output
+			select {
+			case semaphore <- output:
+			case <-time.After(a.Timeout):
+				errCh <- fmt.Errorf("sending on semaphore channel timed out after %v seconds", a.Timeout)
+				return
+			}
 		}(i)
 		for pr.nextInstruction() {
 
 		}
 	}
-	wg.Wait()
-	return output
+
+	go func() {
+		wg.Wait()
+		finishedCh <- struct{}{}
+	}()
+	select {
+	case <-finishedCh:
+		return output, nil
+	case err := <-errCh:
+		return 0, err
+	case <-time.After(a.Timeout):
+		return 0, fmt.Errorf("amplify timed out after %v seconds", a.Timeout)
+
+	}
 }
 
-func (a *Amplifier) FindMaxThrusterSignal(amplifyWithLoop bool) int {
+func (a *Amplifier) FindMaxThrusterSignal(amplifyWithLoop bool) (int, error) {
 	outputCh := make(chan int)
+	errCh := make(chan error, 33)
 	var maxOutput int
 
 	//TODO should be an easier way to do this
@@ -171,37 +219,54 @@ func (a *Amplifier) FindMaxThrusterSignal(amplifyWithLoop bool) int {
 							fmt.Printf("Phases: %v\n", phases)
 						}
 						go func() {
+							var amplified int
+							var err error
 							if amplifyWithLoop {
-								outputCh <- a.AmplifyWithLoop(phases)
+								amplified, err = a.AmplifyWithLoop(phases)
 							} else {
-								outputCh <- a.Amplify(phases, 0)
+								amplified, err = a.Amplify(phases, 0)
 							}
+							if err != nil {
+								errCh <- err
+								return
+							}
+							select {
+							case outputCh <- amplified:
+							case <-time.After(a.Timeout):
+								errCh <- fmt.Errorf("sending on output channel timed out after %v seconds", a.Timeout)
+								return
+							}
+
 						}()
-
-						out := <-outputCh
-						if out > maxOutput {
-							maxOutput = out
+						select {
+						case out := <-outputCh:
+							if out > maxOutput {
+								maxOutput = out
+							}
+							if debug {
+								fmt.Printf("Out: %v\n", out)
+							}
+						case <-time.After(a.Timeout):
+							return 0, fmt.Errorf("FindMaxThrusterSignal timed out after %v seconds", a.Timeout)
 						}
-						if debug {
-							fmt.Printf("Out: %v\n", out)
-						}
-
 					}
 				}
 			}
 		}
 	}
 
-	return maxOutput
+	return maxOutput, nil
 }
 
-func (a *Amplifier) AmplifyWithLoop(phases []int) int {
+func (a *Amplifier) AmplifyWithLoop(phases []int) (int, error) {
 	output := make([]int, len(phases))
 	var wg sync.WaitGroup
 	var mux sync.Mutex
 	var inChannels []chan int
 	var outChannels []chan int
 	var closeChannels []chan int
+	errCh := make(chan error, 33)
+	finishedCh := make(chan struct{})
 	for range phases {
 		inChannels = append(inChannels, make(chan int, 2)) //make buffered, so it wont' block when the output is received
 		outChannels = append(outChannels, make(chan int))
@@ -227,10 +292,19 @@ func (a *Amplifier) AmplifyWithLoop(phases []int) int {
 		}(&pr, i)
 		go func(i, phase int, inCh chan int) {
 			defer wg.Done()
-
-			inCh <- phase
+			select {
+			case inCh <- phase:
+			case <-time.After(a.Timeout):
+				errCh <- fmt.Errorf("sending on input channel timed out after %v seconds", a.Timeout)
+				return
+			}
 			if i == 0 {
-				inCh <- 0
+				select {
+				case inCh <- 0:
+				case <-time.After(a.Timeout):
+					errCh <- fmt.Errorf("sending on input channel timed out after %v seconds", a.Timeout)
+					return
+				}
 			}
 		}(i, phase, inCh)
 	}
@@ -272,6 +346,9 @@ func (a *Amplifier) AmplifyWithLoop(phases []int) int {
 					}
 					mux.Unlock()
 					break forLoop
+				case <-time.After(a.Timeout):
+					errCh <- fmt.Errorf("receiving on output or close channel timed out after %v seconds", a.Timeout)
+					return
 				}
 
 			}
@@ -279,6 +356,17 @@ func (a *Amplifier) AmplifyWithLoop(phases []int) int {
 		}(i, phase, inCh, nextInch, outCh, closeCh)
 	}
 
-	wg.Wait()
-	return output[len(output)-1]
+	go func() {
+		wg.Wait()
+		finishedCh <- struct{}{}
+	}()
+	select {
+	case <-finishedCh:
+		return output[len(output)-1], nil
+	case err := <-errCh:
+		return 0, err
+	case <-time.After(a.Timeout):
+		return 0, fmt.Errorf("AmplifyWithLoop timed out after %v seconds", a.Timeout)
+
+	}
 }
