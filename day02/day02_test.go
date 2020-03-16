@@ -1,9 +1,10 @@
-package advent_of_code
+package day02
 
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tosan88/advent-of-code/aoc_io"
 	"testing"
 )
 
@@ -70,8 +71,8 @@ func TestNext(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			p := NewProgram(test.input)
 			assert.Equal(t, test.output, p.next())
-			assert.Equal(t, test.cursor, p.cursor)
-			assert.Equal(t, test.code, p.code)
+			assert.Equal(t, test.cursor, p.Cursor)
+			assert.Equal(t, test.code, p.Code)
 		})
 	}
 }
@@ -113,7 +114,7 @@ func TestRunCode(t *testing.T) {
 }
 
 func TestRunCodeAoCPart1(t *testing.T) {
-	ints, err := readInputAsCsi("aoc_input02.txt")
+	ints, err := aoc_io.ReadInputAsCsi("aoc_input02.txt")
 	if err != nil {
 		t.Fatalf("ERROR: %v\n", err)
 	}
@@ -137,7 +138,7 @@ func TestRunCodeAoCPart1(t *testing.T) {
 }
 
 func TestRunCodeAoCPart2(t *testing.T) {
-	ints, err := readInputAsCsi("aoc_input02.txt")
+	ints, err := aoc_io.ReadInputAsCsi("aoc_input02.txt")
 	if err != nil {
 		t.Fatalf("ERROR: %v\n", err)
 	}

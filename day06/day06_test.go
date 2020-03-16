@@ -1,7 +1,8 @@
-package advent_of_code
+package day06
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/tosan88/advent-of-code/aoc_io"
 	"testing"
 )
 
@@ -53,7 +54,7 @@ func Test_orbitSystem_countOrbits(t *testing.T) {
 }
 
 func TestAoCDay06Part1(t *testing.T) {
-	orbitingSystem, err := readInputAsOM("aoc_input06.txt")
+	orbitingSystem, err := aoc_io.ReadInputAsOM("aoc_input06.txt")
 	if err != nil {
 		t.Fatalf("ERROR: %v\n", err)
 	}
@@ -183,7 +184,7 @@ func Test_orbits_minTransfer(t *testing.T) {
 }
 
 func TestAoCDay06Part2(t *testing.T) {
-	orbitingSystem, err := readInputAsOM("aoc_input06.txt")
+	orbitingSystem, err := aoc_io.ReadInputAsOM("aoc_input06.txt")
 	if err != nil {
 		t.Fatalf("ERROR: %v\n", err)
 	}

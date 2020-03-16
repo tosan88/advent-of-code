@@ -1,4 +1,4 @@
-package advent_of_code
+package day01
 
 /*
 Fuel required to launch a given module is based on its mass. Specifically, to find the fuel required for a module,

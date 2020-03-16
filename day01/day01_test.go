@@ -1,8 +1,9 @@
-package advent_of_code
+package day01
 
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/tosan88/advent-of-code/aoc_io"
 	"testing"
 )
 
@@ -69,8 +70,8 @@ func TestCalculateFuelWithCorrection(t *testing.T) {
 	}
 }
 
-func TestCalculateAllFuel(t *testing.T) {
-	masses, err := readInputAsIntPerLines("aoc_input01.txt")
+func TestRunCodeAoCDay01(t *testing.T) {
+	masses, err := aoc_io.ReadInputAsIntPerLines("aoc_input01.txt")
 	if err != nil {
 		errMsg := fmt.Sprintf("Error: %v\n", err)
 		t.Fatalf(errMsg)

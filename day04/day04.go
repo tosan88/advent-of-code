@@ -1,11 +1,11 @@
-package advent_of_code
+package day04
 
 import (
 	"github.com/stretchr/stew/slice"
 	"math"
 )
 
-func getDigits(password int) []int {
+func GetDigits(password int) []int {
 	q := int(math.Abs(float64(password)))
 	var digits []int
 	for q > 0 {
@@ -25,7 +25,7 @@ func reverse(ints []int) []int {
 }
 
 func isValid(password int) bool {
-	digits := reverse(getDigits(password))
+	digits := reverse(GetDigits(password))
 	if len(digits) != 6 {
 		return false
 	}
@@ -45,7 +45,7 @@ func isValid(password int) bool {
 }
 
 func isValidPart2(password int) bool {
-	digits := reverse(getDigits(password))
+	digits := reverse(GetDigits(password))
 	if len(digits) != 6 {
 		return false
 	}

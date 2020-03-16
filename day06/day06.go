@@ -1,4 +1,4 @@
-package advent_of_code
+package day06
 
 import "math"
 

@@ -1,8 +1,9 @@
-package advent_of_code
+package day05
 
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tosan88/advent-of-code/aoc_io"
 	"reflect"
 	"testing"
 )
@@ -50,12 +51,12 @@ func Test_getOpCodeWithParamModes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1 := getOpCodeWithParamModes(tt.args.input)
+			got, got1 := GetOpCodeWithParamModes(tt.args.input)
 			if got != tt.expectedOpCode {
-				t.Errorf("getOpCodeWithParamModes() got = %v, want %v", got, tt.expectedOpCode)
+				t.Errorf("GetOpCodeWithParamModes() got = %v, want %v", got, tt.expectedOpCode)
 			}
 			if !reflect.DeepEqual(got1, tt.expectedModes) {
-				t.Errorf("getOpCodeWithParamModes() got1 = %v, want %v", got1, tt.expectedModes)
+				t.Errorf("GetOpCodeWithParamModes() got1 = %v, want %v", got1, tt.expectedModes)
 			}
 		})
 	}
@@ -189,9 +190,9 @@ func Test_program_RunCodeOfDay05(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &program{
-				code:   tt.fields.code,
-				cursor: tt.fields.cursor,
+			p := &Program{
+				Code:   tt.fields.code,
+				Cursor: tt.fields.cursor,
 			}
 			if got := p.RunCodeOfDay05(tt.args.inputCh); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("RunCodeOfDay05() = %v, want %v", got, tt.want)
@@ -201,7 +202,7 @@ func Test_program_RunCodeOfDay05(t *testing.T) {
 }
 
 func TestAoCDay05Part1(t *testing.T) {
-	ints, err := readInputAsCsi("aoc_input05.txt")
+	ints, err := aoc_io.ReadInputAsCsi("aoc_input05.txt")
 	if err != nil {
 		t.Fatalf("ERROR: %v\n", err)
 	}
@@ -240,7 +241,7 @@ func TestAoCDay05Part1(t *testing.T) {
 	go func() {
 		mockInputCh <- 1 //ID for the ship's air conditioner unit
 	}()
-	p := NewProgram(ints)
+	p := &Program{Code: ints, Cursor: 0}
 	result := p.RunCodeOfDay05(mockInputCh)
 
 	assert.Equal(t, []int{3, 225, 1, 225, 6, 6, 1101, 1, 238, 225, 104, 0, 1101, 9, 90, 224, 1001, 224, -99, 224, 4,
@@ -277,7 +278,7 @@ func TestAoCDay05Part1(t *testing.T) {
 }
 
 func TestAoCDay05Part2(t *testing.T) {
-	ints, err := readInputAsCsi("aoc_input05.txt")
+	ints, err := aoc_io.ReadInputAsCsi("aoc_input05.txt")
 	if err != nil {
 		t.Fatalf("ERROR: %v\n", err)
 	}
@@ -316,7 +317,7 @@ func TestAoCDay05Part2(t *testing.T) {
 	go func() {
 		mockInputCh <- 5 //ID for the ship's thermal radiator controller
 	}()
-	p := NewProgram(ints)
+	p := &Program{Code: ints, Cursor: 0}
 	result := p.RunCodeOfDay05(mockInputCh)
 
 	assert.Equal(t, []int{314, 225, 1, 225, 6, 6, 1105, 1, 238, 225, 104, 0, 1101, 9, 90, 224, 1001, 224, -99, 224, 4,

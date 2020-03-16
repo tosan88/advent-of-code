@@ -1,4 +1,4 @@
-package advent_of_code
+package aoc_io
 
 import (
 	"bufio"
@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-//readInputAsIntPerLines reads the input file with the given fileName as integers one per line
-func readInputAsIntPerLines(fileName string) ([]int, error) {
+//ReadInputAsIntPerLines reads the input file with the given fileName as integers one per line
+func ReadInputAsIntPerLines(fileName string) ([]int, error) {
 	f, err := os.Open(fileName)
 	if err != nil {
 		return nil, fmt.Errorf("reading input file: %v\n", err)
@@ -33,7 +33,7 @@ func readInputAsIntPerLines(fileName string) ([]int, error) {
 }
 
 //readInputAsCsi reads the input file with the given fileName as comma-separated integers
-func readInputAsCsi(fileName string) ([]int, error) {
+func ReadInputAsCsi(fileName string) ([]int, error) {
 	f, err := os.Open(fileName)
 	if err != nil {
 		return nil, fmt.Errorf("reading input file: %v\n", err)
@@ -60,8 +60,15 @@ func readInputAsCsi(fileName string) ([]int, error) {
 	return nums, nil
 }
 
+type Wire int
+
+type WireDirection struct {
+	Value string
+	Times int
+}
+
 //readInputAsCSWP reads the input file with the given fileName as comma-separated wire path
-func readInputAsCSWP(fileName string) (map[wire][]wireDirection, error) {
+func ReadInputAsCSWP(fileName string) (map[Wire][]WireDirection, error) {
 	f, err := os.Open(fileName)
 	if err != nil {
 		return nil, fmt.Errorf("reading input file: %v\n", err)
@@ -70,22 +77,22 @@ func readInputAsCSWP(fileName string) (map[wire][]wireDirection, error) {
 		_ = f.Close()
 	}()
 
-	path := make(map[wire][]wireDirection)
+	path := make(map[Wire][]WireDirection)
 
 	scanner := bufio.NewScanner(f)
 	wireNumber := 1
 	for scanner.Scan() {
 		line := scanner.Text()
 		directionsAsStrings := strings.Split(line, ",")
-		var wdirs []wireDirection
+		var wdirs []WireDirection
 		for _, dir := range directionsAsStrings {
 			times, err := strconv.Atoi(dir[1:])
 			if err != nil {
 				return nil, fmt.Errorf("converting number in input file: %v\n", err)
 			}
-			wdirs = append(wdirs, wireDirection{value: string(dir[0]), times: times})
+			wdirs = append(wdirs, WireDirection{Value: string(dir[0]), Times: times})
 		}
-		path[wire(wireNumber)] = wdirs
+		path[Wire(wireNumber)] = wdirs
 		wireNumber++
 	}
 
@@ -93,7 +100,7 @@ func readInputAsCSWP(fileName string) (map[wire][]wireDirection, error) {
 }
 
 //readInputAsOM reads the input file with the given fileName as an orbit map
-func readInputAsOM(fileName string) (map[string]string, error) {
+func ReadInputAsOM(fileName string) (map[string]string, error) {
 	f, err := os.Open(fileName)
 	if err != nil {
 		return nil, fmt.Errorf("reading input file: %v\n", err)
@@ -113,4 +120,42 @@ func readInputAsOM(fileName string) (map[string]string, error) {
 	}
 
 	return orbits, nil
+}
+
+func ReadInputAsIntLayers(fileName string, layerLen int) ([][]int, error) {
+	f, err := os.Open(fileName)
+	if err != nil {
+		return nil, fmt.Errorf("reading input file: %v\n", err)
+	}
+	defer func() {
+		_ = f.Close()
+	}()
+
+	var result [][]int
+	currentLen := 0
+	scanner := bufio.NewScanner(f)
+	scanner.Split(bufio.ScanBytes)
+	var layer []int
+
+	for scanner.Scan() {
+		text := scanner.Text()
+		if text == "\n" {
+			continue
+		}
+		digit, err := strconv.Atoi(text)
+		if err != nil {
+			return nil, fmt.Errorf("reading int: %v\n", err)
+		}
+		layer = append(layer, digit)
+		currentLen++
+		if currentLen == layerLen {
+			result = append(result, layer)
+			layer = []int{}
+			currentLen = 0
+		}
+	}
+	if layer != nil && len(layer) > 0 {
+		result = append(result, layer)
+	}
+	return result, nil
 }

@@ -1,4 +1,4 @@
-package advent_of_code
+package day04
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ func TestGetDigits(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			assert.Equal(t, test.output, reverse(getDigits(test.input)))
+			assert.Equal(t, test.output, reverse(GetDigits(test.input)))
 		})
 	}
 }

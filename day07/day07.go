@@ -1,7 +1,8 @@
-package advent_of_code
+package day07
 
 import (
 	"fmt"
+	"github.com/tosan88/advent-of-code/day05"
 	"log"
 	"os"
 	"strconv"
@@ -23,18 +24,18 @@ var debug = func() bool {
 	return debug
 }()
 
-type programD07 struct {
-	*program
+type Program struct {
+	*day05.Program
 	in    <-chan int
 	out   chan<- int
 	close chan int
 }
 
-func (p *programD07) nextInstruction() bool {
-	if p == nil || p.code == nil {
+func (p *Program) nextInstruction() bool {
+	if p == nil || p.Code == nil {
 		return false
 	}
-	opCode, modes := getOpCodeWithParamModes(p.code[p.cursor])
+	opCode, modes := day05.GetOpCodeWithParamModes(p.Code[p.Cursor])
 	switch opCode {
 	case 99:
 		if p.close != nil {
@@ -42,75 +43,75 @@ func (p *programD07) nextInstruction() bool {
 		}
 		return false
 	case 1:
-		p.addInstruction(modes)
+		p.AddInstruction(modes)
 	case 2:
-		p.multiplyInstruction(modes)
+		p.MultiplyInstruction(modes)
 	case 3:
-		p.readInputInstruction()
+		p.ReadInputInstruction()
 	case 4:
-		p.outputInstruction(modes)
+		p.OutputInstruction(modes)
 	case 5:
-		p.jumpIfTrueInstruction(modes)
+		p.JumpIfTrueInstruction(modes)
 	case 6:
-		p.jumpIfFalseInstruction(modes)
+		p.JumpIfFalseInstruction(modes)
 	case 7:
-		p.lessThanInstruction(modes)
+		p.LessThanInstruction(modes)
 	case 8:
-		p.equalsInstruction(modes)
+		p.EqualsInstruction(modes)
 	default:
-		log.Printf("Invalid opCode: %v, cursor: %v\n", opCode, p.cursor)
+		log.Printf("Invalid opCode: %v, Cursor: %v\n", opCode, p.Cursor)
 		return false
 	}
 	return true
 }
 
-func (p *programD07) readInputInstruction() {
+func (p *Program) ReadInputInstruction() {
 	//read an input and store it at the position given as the next value
-	in := p.readInput()
-	p.code[p.code[p.cursor+1]] = in
-	p.cursor += 2
+	in := p.ReadInput()
+	p.Code[p.Code[p.Cursor+1]] = in
+	p.Cursor += 2
 }
 
-func (p *programD07) outputInstruction(modes []int) {
+func (p *Program) OutputInstruction(modes []int) {
 	//prints a given value given as the first param
 	var output int
 	if modes[0] == 0 {
-		output = p.code[p.code[p.cursor+1]]
+		output = p.Code[p.Code[p.Cursor+1]]
 	} else {
-		output = p.code[p.cursor+1]
+		output = p.Code[p.Cursor+1]
 	}
 	if debug {
-		p.printOutput(output)
+		p.PrintOutput(output)
 	}
 	p.out <- output
-	p.cursor += 2
+	p.Cursor += 2
 }
 
-func (p *programD07) readInput() int {
+func (p *Program) ReadInput() int {
 	if debug {
-		log.Printf("%v expecting input...\n", p.name)
+		log.Printf("%v expecting input...\n", p.Name)
 	}
 	input := <-p.in
 	if debug {
-		log.Printf("%v got input: %v\n", p.name, input)
+		log.Printf("%v got input: %v\n", p.Name, input)
 	}
 	return input
 }
 
-type amplifier struct {
-	code []int
+type Amplifier struct {
+	Code []int
 }
 
-func (a *amplifier) amplify(phases []int, initialPhase int) int {
+func (a *Amplifier) Amplify(phases []int, initialPhase int) int {
 	var output int
 	var wg sync.WaitGroup
 	semaphore := make(chan int, len(phases))
 	for i, phase := range phases {
-		code := make([]int, len(a.code))
-		copy(code, a.code)
+		code := make([]int, len(a.Code))
+		copy(code, a.Code)
 		inCh := make(chan int)
 		outCh := make(chan int)
-		pr := programD07{in: inCh, out: outCh, program: &program{cursor: 0, code: code}}
+		pr := Program{in: inCh, out: outCh, Program: &day05.Program{Cursor: 0, Code: code}}
 		wg.Add(2)
 		go func(i int) {
 			defer wg.Done()
@@ -143,49 +144,7 @@ func (a *amplifier) amplify(phases []int, initialPhase int) int {
 	return output
 }
 
-func (a *amplifier) findMaxThrusterSignal() int {
-	outputCh := make(chan int)
-	var maxOutput int
-
-	//TODO should be an easier way to do this
-	for i := 0; i < 5; i++ {
-		for j := 0; j < 5; j++ {
-			if j == i {
-				continue
-			}
-			for k := 0; k < 5; k++ {
-				if k == i || k == j {
-					continue
-				}
-				for l := 0; l < 5; l++ {
-					if l == i || l == j || l == k {
-						continue
-					}
-					for m := 0; m < 5; m++ {
-						if m == i || m == j || m == k || m == l {
-							continue
-						}
-						phases := []int{i, j, k, l, m}
-						if debug {
-							fmt.Printf("Phases: %v\n", phases)
-						}
-						go func() {
-							outputCh <- a.amplify(phases, 0)
-						}()
-						out := <-outputCh
-						if out > maxOutput {
-							maxOutput = out
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return maxOutput
-}
-
-func (a *amplifier) findMaxThrusterSignalPart2() int {
+func (a *Amplifier) FindMaxThrusterSignal(amplifyWithLoop bool) int {
 	outputCh := make(chan int)
 	var maxOutput int
 
@@ -212,7 +171,11 @@ func (a *amplifier) findMaxThrusterSignalPart2() int {
 							fmt.Printf("Phases: %v\n", phases)
 						}
 						go func() {
-							outputCh <- a.amplifyWithLoop(phases)
+							if amplifyWithLoop {
+								outputCh <- a.AmplifyWithLoop(phases)
+							} else {
+								outputCh <- a.Amplify(phases, 0)
+							}
 						}()
 
 						out := <-outputCh
@@ -232,7 +195,7 @@ func (a *amplifier) findMaxThrusterSignalPart2() int {
 	return maxOutput
 }
 
-func (a *amplifier) amplifyWithLoop(phases []int) int {
+func (a *Amplifier) AmplifyWithLoop(phases []int) int {
 	output := make([]int, len(phases))
 	var wg sync.WaitGroup
 	var mux sync.Mutex
@@ -246,14 +209,14 @@ func (a *amplifier) amplifyWithLoop(phases []int) int {
 	}
 
 	for i, phase := range phases {
-		code := make([]int, len(a.code))
-		copy(code, a.code)
+		code := make([]int, len(a.Code))
+		copy(code, a.Code)
 		outCh := outChannels[i]
 		inCh := inChannels[i]
 		closeCh := closeChannels[i]
-		pr := programD07{in: inCh, out: outCh, program: &program{cursor: 0, code: code, name: fmt.Sprintf("P%v", i)}, close: closeCh}
+		pr := Program{in: inCh, out: outCh, Program: &day05.Program{Cursor: 0, Code: code, Name: fmt.Sprintf("P%v", i)}, close: closeCh}
 		wg.Add(1)
-		go func(p *programD07, i int) {
+		go func(p *Program, i int) {
 			//defer wg.Done()
 			if debug {
 				fmt.Printf("P%v : %p ; in : %p, out : %p\n", i, p, p.in, p.out)
@@ -274,8 +237,8 @@ func (a *amplifier) amplifyWithLoop(phases []int) int {
 	wg.Wait()
 	for i, phase := range phases {
 		mux.Lock()
-		code := make([]int, len(a.code))
-		copy(code, a.code)
+		code := make([]int, len(a.Code))
+		copy(code, a.Code)
 		outCh := outChannels[i]
 		inCh := inChannels[i]
 		closeCh := closeChannels[i]
